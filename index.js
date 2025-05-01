@@ -49,32 +49,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Enable CORS for all origins (or you can specify a specific one like 'http://localhost:8100')
-// app.use(cors());  // This will allow all origins by default
-
-// const shopify = new Shopify({
-//   shopName: process.env.SHOPIFY_SHOP_NAME,
-//   apiKey: process.env.SHOPIFY_API_KEY,
-//   password: process.env.SHOPIFY_ACCESS_TOKEN,
-//   apiVersion: '2023-01',
-// });
-
-// app.get("/", (req, res) => {
-//   res.send("Hello from Vercel Backend!");
-// });
-
-// app.get('/products', async (req, res) => {
-//   try {
-//     const products = await shopify.product.list({ limit: 10 });
-//     res.json(products);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-
-
-//---------------shopify-------------------
 app.use(cors());  // This will allow all origins by default
+
 const shopify = new Shopify({
   shopName: process.env.SHOPIFY_SHOP_NAME,
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -85,6 +61,7 @@ const shopify = new Shopify({
 app.get("/", (req, res) => {
   res.send("Hello from Vercel Backend!");
 });
+
 app.get('/products', async (req, res) => {
   try {
     const products = await shopify.product.list({ limit: 10 });
@@ -112,40 +89,6 @@ app.get('/all-products', async (req, res) => {
     res.status(500).json({ error: 'Error fetching all products' });
   }
 });
-
-
-
-app.post('/products', async (req, res) => {
-  try {
-    const productData = req.body;
- 
-    // Basic validation (optional but recommended)
-    if (!productData.title || !productData.body_html || !productData.variants) {
-      return res.status(400).json({ error: 'Missing required product fields' });
-    }
- 
-    const createdProduct = await shopify.product.create(productData);
-    res.status(201).json(createdProduct);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.put('/products/:id', async (req, res) => {
-  const productId = req.params.id;
-  const updatedData = req.body;
- 
-  try {
-    const updatedProduct = await shopify.product.update(productId, updatedData);
-    res.json(updatedProduct);
-  } catch (error) {
-    console.error(`PUT /products/${productId} error:`, error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-
-//---------------shopify------------------------
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
