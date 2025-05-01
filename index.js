@@ -71,24 +71,24 @@ app.get('/products', async (req, res) => {
   }
 });
 
-app.get('/all-products', async (req, res) => {
-  let allProducts = [];
-  let params = { limit: 250 }; // max limit
-  try {
-    do {
-      const products = await shopify.product.list(params);
-      allProducts = allProducts.concat(products);
+// app.get('/all-products', async (req, res) => {
+//   let allProducts = [];
+//   let params = { limit: 250 }; // max limit
+//   try {
+//     do {
+//       const products = await shopify.product.list(params);
+//       allProducts = allProducts.concat(products);
 
-      // Shopify uses "link" headers for pagination
-      params = products.nextPageParameters; // null if no more pages
-    } while (params !== undefined);
+//       // Shopify uses "link" headers for pagination
+//       params = products.nextPageParameters; // null if no more pages
+//     } while (params !== undefined);
 
-    res.json(allProducts);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error fetching all products' });
-  }
-});
+//     res.json(allProducts);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Error fetching all products' });
+//   }
+// });
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
