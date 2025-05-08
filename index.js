@@ -435,6 +435,128 @@ app.put('/products/:id', async (req, res) => {
 
 
 
+// app.get('/all-collections', async (req, res) => {
+//   let allCollections = [];
+//   let hasNextPage = true;
+//   let cursor = null;
+
+//   try {
+//     while (hasNextPage) {
+//       const query = `
+//         query getCollections($cursor: String) {
+//           collections(first: 100, after: $cursor) {
+//             pageInfo {
+//               hasNextPage
+//               endCursor
+//             }
+//             edges {
+//               node {
+//                 id
+//                 title
+//                 handle
+//                 updatedAt
+//                 products(first: 250) {
+//                   edges {
+//                     node {
+//                       id
+//                       title
+//                       handle
+//                       createdAt
+//                       status
+//                       images(first: 1) {
+//                         edges {
+//                           node {
+//                             url
+//                           }
+//                         }
+//                       }
+//                       priceRange {
+//                         minVariantPrice {
+//                           amount
+//                         }
+//                         maxVariantPrice {
+//                           amount
+//                         }
+//                       }
+//                       variants(first: 1) {
+//                         edges {
+//                           node {
+//                             compareAtPrice
+//                           }
+//                         }
+//                       }
+//                       metafield(namespace: "custom", key: "money_price") {
+//                         value
+//                       }
+//                     }
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       `;
+
+//       const variables = { cursor };
+//       const response = await shopify.graphql(query, variables);
+
+//       if (response.errors) {
+//         console.error('GraphQL errors:', response.errors);
+//         return res.status(500).json({ error: 'GraphQL query error', details: response.errors });
+//       }
+
+//       const collections = response.collections.edges.map(edge => {
+//         const node = edge.node;
+
+//         node.products = node.products.edges.map(p => {
+//           const product = p.node;
+
+//           // Extract first image URL if available
+//           const imageEdge = product.images?.edges?.[0];
+//           product.image = imageEdge ? imageEdge.node.url : null;
+
+//           // Extract min and max price
+//           product.salePrice = product.priceRange?.minVariantPrice?.amount || null;
+
+//           // Extract compareAtPrice from first variant
+//           product.comparePrice = product.variants?.edges?.[0]?.node?.compareAtPrice || null;
+
+//           // Extract rewardsNote from metafield
+//           product.rewardsNote = product.metafield?.value || null;
+
+//           // product.moneyPrice = product.metafields?.money_price?.value || null;
+//           product.moneyPrice = product.metafield?.value || null;
+
+
+//           return product;
+//         });
+
+//         if (node.products.length > 0) {
+//           return node;
+//         }
+//       }).filter(Boolean);
+
+//       allCollections = allCollections.concat(collections);
+//       hasNextPage = response.collections.pageInfo.hasNextPage;
+//       cursor = response.collections.pageInfo.endCursor;
+//     }
+
+//     res.json(allCollections);
+//   } catch (error) {
+//     console.error('Error fetching collections:', error);
+//     res.status(500).json({ error: 'Error fetching collections via GraphQL', details: error.message });
+//   }
+// });
+
+
+
+
+
+
+
+//---------------shopify------------------------
+
+
 app.get('/all-collections', async (req, res) => {
   let allCollections = [];
   let hasNextPage = true;
@@ -508,30 +630,24 @@ app.get('/all-collections', async (req, res) => {
       const collections = response.collections.edges.map(edge => {
         const node = edge.node;
 
-        node.products = node.products.edges.map(p => {
-          const product = p.node;
+        // Filter active products and limit to 4
+        const activeProducts = node.products.edges
+          .map(p => p.node)
+          .filter(product => product.status === "ACTIVE")
+          .slice(0, 4)
+          .map(product => {
+            const imageEdge = product.images?.edges?.[0];
+            product.image = imageEdge ? imageEdge.node.url : null;
+            product.salePrice = product.priceRange?.minVariantPrice?.amount || null;
+            product.comparePrice = product.variants?.edges?.[0]?.node?.compareAtPrice || null;
+            product.rewardsNote = product.metafield?.value || null;
+            product.moneyPrice = product.metafield?.value || null;
+            return product;
+          });
 
-          // Extract first image URL if available
-          const imageEdge = product.images?.edges?.[0];
-          product.image = imageEdge ? imageEdge.node.url : null;
-
-          // Extract min and max price
-          product.salePrice = product.priceRange?.minVariantPrice?.amount || null;
-
-          // Extract compareAtPrice from first variant
-          product.comparePrice = product.variants?.edges?.[0]?.node?.compareAtPrice || null;
-
-          // Extract rewardsNote from metafield
-          product.rewardsNote = product.metafield?.value || null;
-
-          // product.moneyPrice = product.metafields?.money_price?.value || null;
-          product.moneyPrice = product.metafield?.value || null;
-
-
-          return product;
-        });
-
-        if (node.products.length > 0) {
+        // Only include collection if it has active products
+        if (activeProducts.length > 0) {
+          node.products = activeProducts;
           return node;
         }
       }).filter(Boolean);
@@ -548,13 +664,6 @@ app.get('/all-collections', async (req, res) => {
   }
 });
 
-
-
-
-
-
-
-//---------------shopify------------------------
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
